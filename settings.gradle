@@ -1,0 +1,16 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+        maven { url = 'https://jitpack.io' }
+    }
+}
+
+rootProject.name = 'Vivecraft_Spigot_Extensions' 
