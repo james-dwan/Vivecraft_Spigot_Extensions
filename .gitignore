@@ -29,6 +29,12 @@ generated/
 .gradle/
 .m2/
 build/
+gradlew
+gradlew.bat
+
+# Build artifacts
+target/
+*.lst
 
 # Misc project things
 setup/
