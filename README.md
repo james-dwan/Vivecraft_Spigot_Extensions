@@ -67,10 +67,6 @@ This fork was created to bring the original Vivecraft Spigot Extensions plugin u
 - **Pose/Crawling Features:** VR crawling and pose override are currently broken due to inability to map the pose field. These are documented as known issues and will be fixed when a working mapping is found.
 - **API Changes:** Updated for new method signatures, inventory access, and entity goal selectors as required by 1.21.7.
 
-## Where to Find More Details
-- **Migration and research plans:** See `MIGRATION_PLAN.md`, `NMS_MIGRATION_PLAN.md`, `NMS_ENTITY_ACCESS_RESEARCH.md`, `NMS_MAPPING_RESEARCH.md`, `PLUGIN_ARCHITECTURE.md`, `TARGETING_CONDITIONS_RESEARCH.md`, and `VAULT_INTEGRATION_RESEARCH.md` in this repo for full technical details, research, and decision logs.
-- **Known issues:** See the 'Known Issues' section below and in the migration plans for current limitations and workarounds.
-
 **This fork is a community-driven effort to keep Vivecraft Spigot Extensions alive and working for the latest Minecraft servers. If you have suggestions, fixes, or mapping updates, please contribute or open an issue!**
 
 ## Build System Modernization
