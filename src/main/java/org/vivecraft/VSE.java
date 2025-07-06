@@ -371,18 +371,50 @@ public class VSE extends JavaPlugin implements Listener {
 			}
 		}, t);
 
-		// Use getHandle() reflection to access NMS ServerPlayer
+		// Use reflection to access NMS ServerPlayer, connection, and Netty channel
 		try {
 			Object nmsEntity = p.getClass().getMethod("getHandle").invoke(p);
-			// Use reflection to access the connection field and add the AimFixHandler
-			Object connection = Reflector.getFieldValue(Reflector.connection, nmsEntity);
-			Object channel = Reflector.getFieldValue(Reflector.channel, connection);
-			// If you need to interact with the pipeline, use reflection or update as needed
-			// Example: ((io.netty.channel.Channel) channel).pipeline().addBefore(...)
-			// For now, just log success
-			getLogger().info("Successfully accessed NMS ServerPlayer and connection for aim fix.");
+			
+			// Access connection field using community-validated approach
+			java.lang.reflect.Field connectionField = nmsEntity.getClass().getDeclaredField("connection");
+			connectionField.setAccessible(true);
+			Object connection = connectionField.get(nmsEntity);
+
+			// Access playerGameConnection (known field name from community research)
+			java.lang.reflect.Field paperConnField = connection.getClass().getDeclaredField("playerGameConnection");
+			paperConnField.setAccessible(true);
+			Object paperConn = paperConnField.get(connection);
+
+			// Based on field discovery, minecraftConnection doesn't exist in PaperPlayerGameConnection
+			// The channel might be directly accessible from the connection object
+			// Try to access channel directly from the connection object
+			String[] possibleChannelNames = {"channel", "c", "d", "e", "f"};
+			
+			for (String fieldName : possibleChannelNames) {
+				try {
+					java.lang.reflect.Field channelField = connection.getClass().getDeclaredField(fieldName);
+					channelField.setAccessible(true);
+					Object channel = channelField.get(connection);
+					getLogger().info("Successfully accessed channel using field: " + fieldName);
+					// TODO: Use channel for aim fix functionality
+					break;
+				} catch (Exception e) {
+					// Continue to next possible field name
+				}
+			}
+			
+			// If direct channel access fails, try through playerGameConnection
+			try {
+				java.lang.reflect.Field[] fields = paperConn.getClass().getDeclaredFields();
+				getLogger().info("Available fields in PaperPlayerGameConnection:");
+				for (java.lang.reflect.Field field : fields) {
+					getLogger().info("Field: " + field.getName() + " | Type: " + field.getType().getName());
+				}
+			} catch (Exception e) {
+				getLogger().warning("Failed to list PaperPlayerGameConnection fields: " + e.getMessage());
+			}
 		} catch (Exception ex) {
-			getLogger().warning("Failed to access NMS ServerPlayer for aim fix: " + ex.getMessage());
+			getLogger().warning("Failed to access NMS internals for aim fix: " + ex.getMessage());
 		}
 	}
 

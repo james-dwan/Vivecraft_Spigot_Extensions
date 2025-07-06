@@ -85,7 +85,15 @@ public class VivePlayer {
 
 		}
 
-		return ((net.minecraft.world.entity.player.Player)player).getViewVector(1.0f);
+		try {
+			Object nmsPlayer = player.getClass().getMethod("getHandle").invoke(player);
+			java.lang.reflect.Method getViewVector = nmsPlayer.getClass().getMethod("getViewVector", float.class);
+			return (Vec3) getViewVector.invoke(nmsPlayer, 1.0f);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			// Optionally, log this error using your plugin's logger
+		}
+		return new Vec3(0, 0, 0);
 	}
 
 	@SuppressWarnings("unused")
@@ -149,8 +157,15 @@ public class VivePlayer {
 		}else{
 		}
 		
-		return ((net.minecraft.world.entity.player.Player)player).getViewVector(1.0f);
-
+		try {
+			Object nmsPlayer = player.getClass().getMethod("getHandle").invoke(player);
+			java.lang.reflect.Method getViewVector = nmsPlayer.getClass().getMethod("getViewVector", float.class);
+			return (Vec3) getViewVector.invoke(nmsPlayer, 1.0f);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			// Optionally, log this error using your plugin's logger
+		}
+		return new Vec3(0, 0, 0);
 	}
 
 	@SuppressWarnings("unused")

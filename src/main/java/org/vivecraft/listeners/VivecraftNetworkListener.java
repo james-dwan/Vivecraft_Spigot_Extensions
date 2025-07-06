@@ -238,8 +238,8 @@ public class VivecraftNetworkListener implements PluginMessageListener {
 			try {
 				Object nmsEntity = sender.getClass().getMethod("getHandle").invoke(sender);
 				ServerPlayer nms = (ServerPlayer) nmsEntity;
-				nms.fallDistance = 0;
-				Reflector.setFieldValue(Reflector.aboveGroundTickCount, nms.connection, 0);
+			nms.fallDistance = 0;
+			Reflector.setFieldValue(Reflector.aboveGroundTickCount, nms.connection, 0);
 			} catch (Exception ex) {
 				vse.getLogger().warning("Failed to access NMS ServerPlayer for climbing: " + ex.getMessage());
 			}
