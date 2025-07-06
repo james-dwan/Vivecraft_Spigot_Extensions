@@ -52,7 +52,6 @@ This fork was created to bring the original Vivecraft Spigot Extensions plugin u
 - **Implemented robust error handling and logging** for all reflection operations.
 - **Removed all CraftBukkit imports** and replaced with Paperweight or Bukkit API alternatives.
 - **Tested and validated each change iteratively** on a live Paper 1.21.7 server.
-- **Documented every step, challenge, and solution** in detailed migration and research plans (see repo for `MIGRATION_PLAN.md`, `NMS_MIGRATION_PLAN.md`, etc).
 
 ## Community Best Practices Followed
 - Used official Mojang, MCP, and Fabric Yarn mappings for NMS field research.
