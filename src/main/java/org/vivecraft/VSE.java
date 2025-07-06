@@ -315,11 +315,45 @@ public class VSE extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		vivePlayers.remove(event.getPlayer().getUniqueId());
-		MetadataHelper.cleanupMetadata(event.getPlayer());
+		Player p = event.getPlayer();
+		
+		// Clean up aim fix handler from channel pipeline
+		try {
+			Object nmsEntity = p.getClass().getMethod("getHandle").invoke(p);
+			
+			// Access connection field
+			java.lang.reflect.Field connectionField = nmsEntity.getClass().getDeclaredField("connection");
+			connectionField.setAccessible(true);
+			Object connection = connectionField.get(nmsEntity);
+
+			// Access channel
+			java.lang.reflect.Field channelField = connection.getClass().getDeclaredField("f");
+			channelField.setAccessible(true);
+			Object channel = channelField.get(connection);
+
+			// Remove AimFixHandler from pipeline
+			if (channel != null) {
+				try {
+					java.lang.reflect.Method pipelineMethod = channel.getClass().getMethod("pipeline");
+					Object pipeline = pipelineMethod.invoke(channel);
+					
+					java.lang.reflect.Method removeMethod = pipeline.getClass().getMethod("remove", String.class);
+					removeMethod.invoke(pipeline, "vivecraft-aim-fix");
+					
+					getLogger().info("Successfully removed AimFixHandler for player: " + p.getName());
+				} catch (Exception e) {
+					// Handler might not exist, which is fine
+				}
+			}
+		} catch (Exception ex) {
+			// Ignore cleanup errors
+		}
+		
+		vivePlayers.remove(p.getUniqueId());
+		MetadataHelper.cleanupMetadata(p);
 
 		if(getConfig().getBoolean("welcomemsg.enabled"))
-			broadcastConfigString("welcomemsg.leaveMessage", event.getPlayer().getDisplayName());
+			broadcastConfigString("welcomemsg.leaveMessage", p.getDisplayName());
 	}
 
 	@EventHandler
@@ -371,6 +405,7 @@ public class VSE extends JavaPlugin implements Listener {
 			}
 		}, t);
 
+		// Implement aim fix functionality for VR players
 		// Use reflection to access NMS ServerPlayer, connection, and Netty channel
 		try {
 			Object nmsEntity = p.getClass().getMethod("getHandle").invoke(p);
@@ -380,38 +415,29 @@ public class VSE extends JavaPlugin implements Listener {
 			connectionField.setAccessible(true);
 			Object connection = connectionField.get(nmsEntity);
 
-			// Access playerGameConnection (known field name from community research)
-			java.lang.reflect.Field paperConnField = connection.getClass().getDeclaredField("playerGameConnection");
-			paperConnField.setAccessible(true);
-			Object paperConn = paperConnField.get(connection);
+			// Access channel using known field name from community research
+			java.lang.reflect.Field channelField = connection.getClass().getDeclaredField("f");
+			channelField.setAccessible(true);
+			Object channel = channelField.get(connection);
 
-			// Based on field discovery, minecraftConnection doesn't exist in PaperPlayerGameConnection
-			// The channel might be directly accessible from the connection object
-			// Try to access channel directly from the connection object
-			String[] possibleChannelNames = {"channel", "c", "d", "e", "f"};
-			
-			for (String fieldName : possibleChannelNames) {
+			// Inject AimFixHandler into the channel pipeline for VR players
+			if (channel != null && vivePlayers.containsKey(p.getUniqueId()) && vivePlayers.get(p.getUniqueId()).isVR()) {
 				try {
-					java.lang.reflect.Field channelField = connection.getClass().getDeclaredField(fieldName);
-					channelField.setAccessible(true);
-					Object channel = channelField.get(connection);
-					getLogger().info("Successfully accessed channel using field: " + fieldName);
-					// TODO: Use channel for aim fix functionality
-					break;
+					// Get the channel pipeline
+					java.lang.reflect.Method pipelineMethod = channel.getClass().getMethod("pipeline");
+					Object pipeline = pipelineMethod.invoke(channel);
+					
+					// Create AimFixHandler instance
+					AimFixHandler aimFixHandler = new AimFixHandler((net.minecraft.network.Connection) connection);
+					
+					// Add handler to pipeline
+					java.lang.reflect.Method addLastMethod = pipeline.getClass().getMethod("addLast", String.class, io.netty.channel.ChannelHandler.class);
+					addLastMethod.invoke(pipeline, "vivecraft-aim-fix", aimFixHandler);
+					
+					getLogger().info("Successfully injected AimFixHandler for VR player: " + p.getName());
 				} catch (Exception e) {
-					// Continue to next possible field name
+					getLogger().warning("Failed to inject AimFixHandler for " + p.getName() + ": " + e.getMessage());
 				}
-			}
-			
-			// If direct channel access fails, try through playerGameConnection
-			try {
-				java.lang.reflect.Field[] fields = paperConn.getClass().getDeclaredFields();
-				getLogger().info("Available fields in PaperPlayerGameConnection:");
-				for (java.lang.reflect.Field field : fields) {
-					getLogger().info("Field: " + field.getName() + " | Type: " + field.getType().getName());
-				}
-			} catch (Exception e) {
-				getLogger().warning("Failed to list PaperPlayerGameConnection fields: " + e.getMessage());
 			}
 		} catch (Exception ex) {
 			getLogger().warning("Failed to access NMS internals for aim fix: " + ex.getMessage());
