@@ -1,2 +1,2 @@
 #this file is used to check for updates
-1.21.7-fork1: VSE updated for Minecraft 1.21.7 by james-dwan.
+1.21.7.1.0.1: VSE updated for Minecraft 1.21.7 by james-dwan.

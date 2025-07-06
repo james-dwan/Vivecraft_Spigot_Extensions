@@ -14,7 +14,7 @@ plugins {
 }
 
 group = "org.vivecraft"
-version = "1.21.7-1.0.0"
+version = "1.21.7-1.0.1"
 
 def paperVersion = "1.21.7-R0.1-SNAPSHOT"
 
