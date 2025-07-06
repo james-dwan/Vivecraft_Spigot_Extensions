@@ -53,6 +53,17 @@ See the `config.yml` for all available configuration options.
 
 ---
 
+# Known Issues (as of 1.21.7-1.0.0)
+
+> ⚠️ **VR Crawling and Pose Override are currently broken in this version.**
+>
+> - **VR Crawling:** VR players cannot crawl (switch to swimming pose) due to changes in Minecraft's internal field mappings. This does not affect basic VR play, but disables crawling in VR.
+> - **VR Pose Override:** Custom pose handling for VR players is not functional. This means some VR-specific animations or pose changes may not work as intended.
+>
+> These issues are due to changes in Minecraft 1.21.7's NMS (net.minecraft.server) internals. We are actively researching a fix. All other core VR features are working.
+
+---
+
 # Developer Information
 
 ## Metadata
