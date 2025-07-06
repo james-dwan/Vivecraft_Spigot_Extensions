@@ -228,14 +228,14 @@ public class VSE extends JavaPlugin implements Listener {
 				Object nmsEntity = entity.getClass().getMethod("getHandle").invoke(entity);
 				Creeper e = (Creeper) nmsEntity;
 				
-				AbstractCollection<WrappedGoal> goalB = (AbstractCollection<WrappedGoal>) Reflector.getFieldValue(Reflector.availableGoals, ((Mob)e).goalSelector);
-				for(WrappedGoal b: goalB){
-					if(b.getGoal() instanceof net.minecraft.world.entity.ai.goal.SwellGoal){//replace swell goal.
-						goalB.remove(b);
-						break;
-					}
+			AbstractCollection<WrappedGoal> goalB = (AbstractCollection<WrappedGoal>) Reflector.getFieldValue(Reflector.availableGoals, ((Mob)e).goalSelector);
+			for(WrappedGoal b: goalB){
+				if(b.getGoal() instanceof net.minecraft.world.entity.ai.goal.SwellGoal){//replace swell goal.
+					goalB.remove(b);
+					break;
 				}
-				e.goalSelector.addGoal(2, new CustomGoalSwell(e));
+			}
+			e.goalSelector.addGoal(2, new CustomGoalSwell(e));
 			} catch (Exception ex) {
 				getLogger().warning("Failed to access NMS Creeper: " + ex.getMessage());
 			}
@@ -246,23 +246,23 @@ public class VSE extends JavaPlugin implements Listener {
 				Object nmsEntity = entity.getClass().getMethod("getHandle").invoke(entity);
 				net.minecraft.world.entity.monster.EnderMan e = (net.minecraft.world.entity.monster.EnderMan) nmsEntity;
 				
-				AbstractCollection<WrappedGoal> targets = (AbstractCollection<WrappedGoal>) Reflector.getFieldValue(Reflector.availableGoals, ((Mob)e).targetSelector);
-				for(WrappedGoal b: targets){
-					if(b.getPriority() == 1){ //replace PlayerWhoLookedAt target. Class is private cant use instanceof, check priority on all new versions.
-						targets.remove(b);
-						break;
-					}
+			AbstractCollection<WrappedGoal> targets = (AbstractCollection<WrappedGoal>) Reflector.getFieldValue(Reflector.availableGoals, ((Mob)e).targetSelector);
+			for(WrappedGoal b: targets){
+				if(b.getPriority() == 1){ //replace PlayerWhoLookedAt target. Class is private cant use instanceof, check priority on all new versions.
+					targets.remove(b);
+					break;
 				}
+			}
 				e.targetSelector.addGoal(1, new CustomPathFinderGoalPlayerWhoLookedAtTarget(e));
 
-				AbstractCollection<WrappedGoal> goals = (AbstractCollection<WrappedGoal>) Reflector.getFieldValue(Reflector.availableGoals, ((Mob)e).goalSelector);
-				for(WrappedGoal b: goals){
-					if(b.getPriority()==1){//replace EndermanFreezeWhenLookedAt goal. Verify priority on new version.
-						goals.remove(b);
-						break;
-					}
+			AbstractCollection<WrappedGoal> goals = (AbstractCollection<WrappedGoal>) Reflector.getFieldValue(Reflector.availableGoals, ((Mob)e).goalSelector);
+			for(WrappedGoal b: goals){
+				if(b.getPriority()==1){//replace EndermanFreezeWhenLookedAt goal. Verify priority on new version.
+					goals.remove(b);
+					break;
 				}
-				e.goalSelector.addGoal(1, new CustomGoalStare(e));
+			}
+			e.goalSelector.addGoal(1, new CustomGoalStare(e));
 			} catch (Exception ex) {
 				getLogger().warning("Failed to access NMS EnderMan: " + ex.getMessage());
 			}
@@ -371,8 +371,15 @@ public class VSE extends JavaPlugin implements Listener {
 			}
 		}, t);
 
-						Connection netManager = (Connection) Reflector.getFieldValue(Reflector.connection, ((net.minecraft.server.level.ServerPlayer)p).connection); 
-		netManager.channel.pipeline().addBefore("packet_handler", "vr_aim_fix", new AimFixHandler(netManager));
+						// Use getHandle() reflection to access NMS ServerPlayer
+						try {
+							Object nmsEntity = p.getClass().getMethod("getHandle").invoke(p);
+							net.minecraft.server.level.ServerPlayer nmsPlayer = (net.minecraft.server.level.ServerPlayer) nmsEntity;
+							Connection netManager = (Connection) Reflector.getFieldValue(Reflector.connection, nmsPlayer.connection); 
+							netManager.channel.pipeline().addBefore("packet_handler", "vr_aim_fix", new AimFixHandler(netManager));
+						} catch (Exception ex) {
+							getLogger().warning("Failed to access NMS ServerPlayer for aim fix: " + ex.getMessage());
+						}
 	}
 
 	public void startUpdateCheck() {

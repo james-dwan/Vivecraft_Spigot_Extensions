@@ -50,7 +50,15 @@ public class VivecraftCombatListener implements Listener{
 			vse.getLogger().warning(" Error on projectile launch!");
 		}
 		
-		ServerPlayer nsme = (ServerPlayer)pl;
+		// Use getHandle() reflection to access NMS ServerPlayer
+		ServerPlayer nsme = null;
+		try {
+			Object nmsEntity = pl.getClass().getMethod("getHandle").invoke(pl);
+			nsme = (ServerPlayer) nmsEntity;
+		} catch (Exception ex) {
+			vse.getLogger().warning("Failed to access NMS ServerPlayer for projectile: " + ex.getMessage());
+			return; // Exit early if we can't access the NMS player
+		}
 	
 		Location pos = vp.getControllerPos(vp.activeHand);
 		Vec3 aim = vp.getControllerDir(vp.activeHand);
@@ -154,8 +162,15 @@ public class VivecraftCombatListener implements Listener{
 					//Override it here. It should be set back to normal next tick.
 					//And ideally nothing weird happens because of it.
 
-					((net.minecraft.world.entity.player.Player) damager).setXRot((float) Math.toDegrees(Math.asin(dir.y/dir.length()))); 
-					((net.minecraft.world.entity.player.Player) damager).setYRot((float) Math.toDegrees(Math.atan2(-dir.x, dir.z))); 
+					// Use getHandle() reflection to access NMS Player
+					try {
+						Object nmsEntity = damager.getClass().getMethod("getHandle").invoke(damager);
+						net.minecraft.world.entity.player.Player nmsPlayer = (net.minecraft.world.entity.player.Player) nmsEntity;
+						nmsPlayer.setXRot((float) Math.toDegrees(Math.asin(dir.y/dir.length()))); 
+						nmsPlayer.setYRot((float) Math.toDegrees(Math.atan2(-dir.x, dir.z))); 
+					} catch (Exception ex) {
+						vse.getLogger().warning("Failed to access NMS Player for fireball: " + ex.getMessage());
+					}
 				}
 			}
 		}

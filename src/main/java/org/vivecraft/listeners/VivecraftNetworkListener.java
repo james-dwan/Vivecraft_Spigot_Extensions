@@ -220,17 +220,29 @@ public class VivecraftNetworkListener implements PluginMessageListener {
 				float x = d.readFloat();
 				float y = d.readFloat();
 				float z = d.readFloat();
-				ServerPlayer nms = (ServerPlayer)sender;
-				nms.setPos(x, y, z);
+				// Use getHandle() reflection to access NMS ServerPlayer
+				try {
+					Object nmsEntity = sender.getClass().getMethod("getHandle").invoke(sender);
+					ServerPlayer nms = (ServerPlayer) nmsEntity;
+					nms.setPos(x, y, z);
+				} catch (Exception ex) {
+					vse.getLogger().warning("Failed to access NMS ServerPlayer for teleport: " + ex.getMessage());
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 
 			break;
 		case CLIMBING:			
-			ServerPlayer nms = (ServerPlayer)sender;
-			nms.fallDistance = 0;
-			Reflector.setFieldValue(Reflector.aboveGroundTickCount, nms.connection, 0);
+			// Use getHandle() reflection to access NMS ServerPlayer
+			try {
+				Object nmsEntity = sender.getClass().getMethod("getHandle").invoke(sender);
+				ServerPlayer nms = (ServerPlayer) nmsEntity;
+				nms.fallDistance = 0;
+				Reflector.setFieldValue(Reflector.aboveGroundTickCount, nms.connection, 0);
+			} catch (Exception ex) {
+				vse.getLogger().warning("Failed to access NMS ServerPlayer for climbing: " + ex.getMessage());
+			}
 			break;
 		case ACTIVEHAND:
 			ByteArrayInputStream a2 = new ByteArrayInputStream(data);
@@ -249,8 +261,16 @@ public class VivecraftNetworkListener implements PluginMessageListener {
 			DataInputStream b3 = new DataInputStream(a3);
 			try {
 				vp.crawling = b3.readBoolean();
-				if (vp.crawling)
-					((net.minecraft.world.entity.player.Player)sender).setPose(Pose.SWIMMING);
+				if (vp.crawling) {
+					// Use getHandle() reflection to access NMS Player
+					try {
+						Object nmsEntity = sender.getClass().getMethod("getHandle").invoke(sender);
+						net.minecraft.world.entity.player.Player nmsPlayer = (net.minecraft.world.entity.player.Player) nmsEntity;
+						nmsPlayer.setPose(Pose.SWIMMING);
+					} catch (Exception ex) {
+						vse.getLogger().warning("Failed to access NMS Player for crawling: " + ex.getMessage());
+					}
+				}
 			} catch (IOException e2) {
 				e2.printStackTrace();
 			}

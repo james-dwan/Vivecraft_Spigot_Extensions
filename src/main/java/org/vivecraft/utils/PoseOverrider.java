@@ -16,11 +16,18 @@ public class PoseOverrider {
 	@SuppressWarnings("unchecked")
 	public static void injectPlayer(Player player) {
 			EntityDataAccessor<Pose> poseObj = (EntityDataAccessor<Pose>) Reflector.getFieldValue(Reflector.Entity_Data_Pose, player);
-			SynchedEntityData dataWatcher = ((net.minecraft.world.entity.player.Player) player).getEntityData();
-			SynchedEntityData.DataItem<?>[] entries = (DataItem<?>[]) Reflector.getFieldValue(Reflector.SynchedEntityData_itemsById, dataWatcher);
-			InjectedDataWatcherItem item = new InjectedDataWatcherItem(poseObj, Pose.STANDING, player);
-			if(entries.length-1 >= poseObj.id())
-				entries[poseObj.id()] = item;		
+			// Use getHandle() reflection to access NMS Player
+			try {
+				Object nmsEntity = player.getClass().getMethod("getHandle").invoke(player);
+				net.minecraft.world.entity.player.Player nmsPlayer = (net.minecraft.world.entity.player.Player) nmsEntity;
+				SynchedEntityData dataWatcher = nmsPlayer.getEntityData();
+				SynchedEntityData.DataItem<?>[] entries = (DataItem<?>[]) Reflector.getFieldValue(Reflector.SynchedEntityData_itemsById, dataWatcher);
+				InjectedDataWatcherItem item = new InjectedDataWatcherItem(poseObj, Pose.STANDING, player);
+				if(entries.length-1 >= poseObj.id())
+					entries[poseObj.id()] = item;
+			} catch (Exception ex) {
+				VSE.me.getLogger().warning("Failed to access NMS Player for pose override: " + ex.getMessage());
+			}
 	}
 
 	public static class InjectedDataWatcherItem extends SynchedEntityData.DataItem<Pose> {
