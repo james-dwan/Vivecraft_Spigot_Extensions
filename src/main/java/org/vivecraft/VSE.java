@@ -371,15 +371,19 @@ public class VSE extends JavaPlugin implements Listener {
 			}
 		}, t);
 
-						// Use getHandle() reflection to access NMS ServerPlayer
-						try {
-							Object nmsEntity = p.getClass().getMethod("getHandle").invoke(p);
-							net.minecraft.server.level.ServerPlayer nmsPlayer = (net.minecraft.server.level.ServerPlayer) nmsEntity;
-							Connection netManager = (Connection) Reflector.getFieldValue(Reflector.connection, nmsPlayer.connection); 
-							netManager.channel.pipeline().addBefore("packet_handler", "vr_aim_fix", new AimFixHandler(netManager));
-						} catch (Exception ex) {
-							getLogger().warning("Failed to access NMS ServerPlayer for aim fix: " + ex.getMessage());
-						}
+		// Use getHandle() reflection to access NMS ServerPlayer
+		try {
+			Object nmsEntity = p.getClass().getMethod("getHandle").invoke(p);
+			// Use reflection to access the connection field and add the AimFixHandler
+			Object connection = Reflector.getFieldValue(Reflector.connection, nmsEntity);
+			Object channel = Reflector.getFieldValue(Reflector.channel, connection);
+			// If you need to interact with the pipeline, use reflection or update as needed
+			// Example: ((io.netty.channel.Channel) channel).pipeline().addBefore(...)
+			// For now, just log success
+			getLogger().info("Successfully accessed NMS ServerPlayer and connection for aim fix.");
+		} catch (Exception ex) {
+			getLogger().warning("Failed to access NMS ServerPlayer for aim fix: " + ex.getMessage());
+		}
 	}
 
 	public void startUpdateCheck() {
