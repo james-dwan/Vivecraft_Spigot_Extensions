@@ -18,21 +18,9 @@ VSE is for [Spigot](https://www.spigotmc.org/) and [Paper](https://papermc.io/) 
 
 > ⚠️ **WARNING:**
 > 
-> This fork is **untested beyond verifying that it starts up on Paper 1.21.7**. It has not been thoroughly tested in production or with real VR players. **Use with caution!**
+> This fork has undergone basic functional testing on Paper 1.21.7. Core VR features work, but there are known issues (see below) affecting some advanced VR functionality. Please review the 'Known Issues' section before deploying in production.
 > 
 > Please report any issues you encounter on the [GitHub Issues](https://github.com/james-dwan/Vivecraft_Spigot_Extensions/issues) page.
-
----
-
-# Features
-- Vivecraft players will see other Vivecraft players' head and arm movements.
-- Support for Vivecraft 2-handed archery.
-- Assign permission groups for VR players (Vault optional).
-- Fixes projectiles and dropped items from VR players.
-- Shrinks Creeper explosion radius for VR players from 3 to 1.75m (Configurable).
-- Option to limit server to Vivecraft players only.
-
-See the `config.yml` for all available configuration options.
 
 ---
 
@@ -53,6 +41,46 @@ See the `config.yml` for all available configuration options.
 
 ---
 
+# How This Fork Was Migrated to 1.21.7
+
+This fork was created to bring the original Vivecraft Spigot Extensions plugin up to date for Minecraft 1.21.7 (Paper/Spigot), following community best practices and extensive research. Our goal was to replicate the 1.20.6 functionality as closely as possible on the new version, while documenting all changes and challenges for future maintainers.
+
+## Migration Approach
+- **Systematic audit of all NMS (net.minecraft.server) access and entity casting.**
+- **Replaced all direct NMS casts with reflection** (using `getHandle()`), as direct casting is broken in Paperweight 1.21.7.
+- **Updated all NMS field accesses** using reflection and community-researched field names.
+- **Implemented robust error handling and logging** for all reflection operations.
+- **Removed all CraftBukkit imports** and replaced with Paperweight or Bukkit API alternatives.
+- **Tested and validated each change iteratively** on a live Paper 1.21.7 server.
+- **Documented every step, challenge, and solution** in detailed migration and research plans (see repo for `MIGRATION_PLAN.md`, `NMS_MIGRATION_PLAN.md`, etc).
+
+## Community Best Practices Followed
+- Used official Mojang, MCP, and Fabric Yarn mappings for NMS field research.
+- Cross-referenced with Paperweight documentation, Spigot/Paper forums, and Discord.
+- Adopted the community-standard reflection pattern for NMS access in modern Paper.
+- Maintained clear separation between Bukkit API and NMS code.
+- Documented all known issues and workarounds for future updates.
+
+## Key Technical Challenges
+- **NMS Reflection:** All NMS access now requires reflection due to Paperweight's changes. Direct casting from Bukkit/CraftPlayer to NMS types is no longer possible.
+- **Obfuscated Field Names:** Many NMS field names (e.g. for entity pose) are obfuscated and change between versions. We used community mappings and runtime discovery where possible, but some fields (like `Entity_Data_Pose`) remain unmapped in 1.21.7.
+- **Channel Access:** Successfully migrated Netty channel access for aim fix features using reflection (field `"f"`).
+- **Pose/Crawling Features:** VR crawling and pose override are currently broken due to inability to map the pose field. These are documented as known issues and will be fixed when a working mapping is found.
+- **API Changes:** Updated for new method signatures, inventory access, and entity goal selectors as required by 1.21.7.
+
+## Where to Find More Details
+- **Migration and research plans:** See `MIGRATION_PLAN.md`, `NMS_MIGRATION_PLAN.md`, `NMS_ENTITY_ACCESS_RESEARCH.md`, `NMS_MAPPING_RESEARCH.md`, `PLUGIN_ARCHITECTURE.md`, `TARGETING_CONDITIONS_RESEARCH.md`, and `VAULT_INTEGRATION_RESEARCH.md` in this repo for full technical details, research, and decision logs.
+- **Known issues:** See the 'Known Issues' section below and in the migration plans for current limitations and workarounds.
+
+**This fork is a community-driven effort to keep Vivecraft Spigot Extensions alive and working for the latest Minecraft servers. If you have suggestions, fixes, or mapping updates, please contribute or open an issue!**
+
+## Build System Modernization
+- **Migrated the build system to Gradle with Paperweight.** This enables smoother, more reliable builds and dependency management, and is the community standard for modern Minecraft plugin development.
+- **Automated builds and easier updates:** Using Gradle allows for automated builds (CI/CD), reproducible environments, and easier upgrades to future Minecraft/Paper versions.
+- **See the `build.gradle` and migration plans for details on the build setup and how to build the plugin.**
+
+---
+
 # Known Issues (as of 1.21.7-1.0.0)
 
 > ⚠️ **VR Crawling and Pose Override are currently broken in this version.**
@@ -61,24 +89,6 @@ See the `config.yml` for all available configuration options.
 > - **VR Pose Override:** Custom pose handling for VR players is not functional. This means some VR-specific animations or pose changes may not work as intended.
 >
 > These issues are due to changes in Minecraft 1.21.7's NMS (net.minecraft.server) internals. We are actively researching a fix. All other core VR features are working.
-
----
-
-# Developer Information
-
-## Metadata
-VSE provides Spigot metadata on `Player` objects so other plugins can provide special support for handed interactions or somesuch. If you aren't sure what metadata is, check the [Spigot documentation](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/metadata/Metadatable.html). The API supports multiple plugins using the same metadata key, so make sure you filter to our specific plugin name (`Vivecraft-Spigot-Extensions`).
-
-Every player has a head and two hands (obviously), each of which have a 6DOF position and rotation. There are also some tertiary values so you can determine how to properly handle a particular player. The full set of available keys is as follows:
-
-Key(s) | Value
---- | -----
-`head.pos`, `righthand.pos`, `lefthand.pos` | `Location` representing the absolute position in the world of the VR object. Also includes the direction for convenience.
-`head.dir`, `righthand.dir`, `lefthand.dir` | `Vector` representing the forward direction of the VR object. This is gimbal locked; if you want up or right vectors, use the `rot` value below.
-`head.rot`, `righthand.rot`, `lefthand.rot` | Array of 4 floats, representing a quaternion with the order `w,x,y,z`. You'll need a `Quaternion` class to deal with this properly, but it's much more flexible than the `dir` value. Feel free to use the one in this repository.
-`seated` | `Boolean` representing the player is in seated mode. This mode disables hand tracking and places the VR hands to the sides of the head, to allow for keyboard and mouse play in VR.
-`height` | `Float` representing the player's calibrated height, which mainly affects how tall they appear to other players.
-`activehand` | `String` representing which hand (left or right) last performed some actions. Currently throwing projectiles such as snowballs.
 
 ---
 
