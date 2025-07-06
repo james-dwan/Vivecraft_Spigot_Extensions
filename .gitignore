@@ -33,3 +33,9 @@ build/
 # Misc project things
 setup/
 lib/
+
+# VSCode
+.vscode/
+
+# Compiled class files
+*.class
