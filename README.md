@@ -62,9 +62,9 @@ This fork was created to bring the original Vivecraft Spigot Extensions plugin u
 
 ## Key Technical Challenges
 - **NMS Reflection:** All NMS access now requires reflection due to Paperweight's changes. Direct casting from Bukkit/CraftPlayer to NMS types is no longer possible.
-- **Obfuscated Field Names:** Many NMS field names (e.g. for entity pose) are obfuscated and change between versions. We used community mappings and runtime discovery where possible, but some fields (like `Entity_Data_Pose`) remain unmapped in 1.21.7.
+- **Obfuscated Field Names:** Many NMS field names are obfuscated and change between versions. We used community mappings and runtime discovery where possible to resolve these.
 - **Channel Access:** Successfully migrated Netty channel access for aim fix features using reflection (field `"f"`).
-- **Pose/Crawling Features:** VR crawling and pose override are currently broken due to inability to map the pose field. These are documented as known issues and will be fixed when a working mapping is found.
+- **Pose System:** The general VR pose system (for sitting, standing, etc.) has been restored. This was achieved by reverse-engineering the client's `VR_PLAYER_STATE` network packet and creating a robust, server-side deserializer.
 - **API Changes:** Updated for new method signatures, inventory access, and entity goal selectors as required by 1.21.7.
 
 **This fork is a community-driven effort to keep Vivecraft Spigot Extensions alive and working for the latest Minecraft servers. If you have suggestions, fixes, or mapping updates, please contribute or open an issue!**
@@ -78,12 +78,11 @@ This fork was created to bring the original Vivecraft Spigot Extensions plugin u
 
 # Known Issues (as of 1.21.7-1.0.0)
 
-> ⚠️ **VR Crawling and Pose Override are currently broken in this version.**
+> ✅ **The VR Pose Override system for sitting/standing is now functional.**
 >
-> - **VR Crawling:** VR players cannot crawl (switch to swimming pose) due to changes in Minecraft's internal field mappings. This does not affect basic VR play, but disables crawling in VR.
-> - **VR Pose Override:** Custom pose handling for VR players is not functional. This means some VR-specific animations or pose changes may not work as intended.
+> - **VR Crawling (Partially Functional):** The specific feature to crawl under 1-block gaps (using the swimming pose) has a known timing issue. Players can only pass under a block *immediately* after the pose change is initiated. If there is a delay, the player's collision appears to revert to its standing size, blocking them. This is a known bug we are investigating.
 >
-> These issues are due to changes in Minecraft 1.21.7's NMS (net.minecraft.server) internals. We are actively researching a fix. All other core VR features are working.
+> Please report any other issues you discover on the [GitHub Issues](https://github.com/james-dwan/Vivecraft_Spigot_Extensions/issues) page.
 
 ---
 

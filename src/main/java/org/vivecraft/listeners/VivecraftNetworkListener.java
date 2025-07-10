@@ -17,6 +17,7 @@ import org.vivecraft.VSE;
 import org.vivecraft.VivePlayer;
 import org.vivecraft.utils.MetadataHelper;
 import org.vivecraft.utils.PoseOverrider;
+import org.vivecraft.utils.VrPlayerState;
 
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.server.level.ServerPlayer;
@@ -317,10 +318,20 @@ public class VivecraftNetworkListener implements PluginMessageListener {
 			}
 			break;
 		case VR_PLAYER_STATE:
-			// Packet 18 - Not yet implemented, but we must acknowledge it to prevent a crash.
+			VrPlayerState state = VrPlayerState.deserialize(data);
+			if (state != null) {
+				// Determine pose based on state
+				if (state.isSeated) {
+					PoseOverrider.setPlayerPose(sender, Pose.SITTING);
+				} else if (state.hmd.position.y < 1.2) { // Infer crouching from HMD height
+					PoseOverrider.setPlayerPose(sender, Pose.CROUCHING);
+				} else {
+					PoseOverrider.setPlayerPose(sender, Pose.STANDING);
+				}
+			}
 			break;
 		case NETWORK_VERSION:
-			// Client is sending its network version.
+			// Sent by client on join.
 			break;
 		case UBERPACKET:
 			ByteArrayInputStream ubin = new ByteArrayInputStream(data);
