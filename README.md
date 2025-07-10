@@ -29,7 +29,7 @@ VSE is for [Spigot](https://www.spigotmc.org/) and [Paper](https://papermc.io/) 
 2. Place the jar in your server's `/plugins` folder.
 3. Restart the server.
 
-> **Note:** This version (`1.21.7-1.0.0`) is **not backwards compatible** with previous Minecraft versions. Use the correct release for your server version.
+> **Note:** This version is **not backwards compatible** with previous Minecraft versions. Use the correct release for your server version.
 
 ---
 
@@ -60,7 +60,7 @@ This fork was created to bring the original Vivecraft Spigot Extensions plugin u
 - Maintained clear separation between Bukkit API and NMS code.
 - Documented all known issues and workarounds for future updates.
 
-## Key Technical Challenges
+## Key Technical ChallengesfThius
 - **NMS Reflection:** All NMS access now requires reflection due to Paperweight's changes. Direct casting from Bukkit/CraftPlayer to NMS types is no longer possible.
 - **Obfuscated Field Names:** Many NMS field names are obfuscated and change between versions. We used community mappings and runtime discovery where possible to resolve these.
 - **Channel Access:** Successfully migrated Netty channel access for aim fix features using reflection (field `"f"`).
