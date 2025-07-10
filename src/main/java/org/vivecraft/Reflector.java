@@ -8,13 +8,15 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.monster.EnderMan;
 
 public class Reflector {
 	//last checked 1.20.6
-	public static Field Entity_Data_Pose= getPrivateField("at", Entity.class);
-	public static Field Entity_eyeHeight = getPrivateField("bg", Entity.class);
+	public static Method getPose = getPublicMethod("getPose", Entity.class);
+	public static Method setPose = getPublicMethod("setPose", Entity.class, Pose.class);
+	public static Field Entity_eyeHeight = getPrivateField("aP", net.minecraft.world.entity.Entity.class);
 	public static Field SynchedEntityData_itemsById = getPrivateField("e", SynchedEntityData.class);
 	public static Field availableGoals = getPrivateField("c", GoalSelector.class);	
 	public static Field aboveGroundTickCount = getPrivateField("J", ServerGamePacketListenerImpl.class);
@@ -57,6 +59,26 @@ public class Reflector {
 		return field;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Method getPublicMethod(String methodName, Class clazz, Class... param)
+	{
+		Method m = null;
+		try
+		{
+			if(param == null) {
+				m = clazz.getMethod(methodName);
+			} else {
+				m = clazz.getMethod(methodName, param);
+			}
+			m.setAccessible(true);
+		}
+		catch(NoSuchMethodException e)
+		{
+			e.printStackTrace();
+		}
+		return m;
+	}
+	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private static Method getPrivateMethod(String methodName, Class clazz, Class... param)
 	{

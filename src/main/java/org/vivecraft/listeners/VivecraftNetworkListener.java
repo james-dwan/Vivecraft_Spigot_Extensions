@@ -18,9 +18,12 @@ import org.vivecraft.VivePlayer;
 import org.vivecraft.utils.MetadataHelper;
 import org.vivecraft.utils.PoseOverrider;
 
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 public class VivecraftNetworkListener implements PluginMessageListener {
 	public VSE vse;
@@ -56,11 +59,18 @@ public class VivecraftNetworkListener implements PluginMessageListener {
 
 		if(!channel.equalsIgnoreCase(VSE.CHANNEL)) return;
 
-		if(payload.length==0) return;
+		if(payload == null || payload.length==0) return;
 
 		VivePlayer vp = VSE.vivePlayers.get(sender.getUniqueId());
 
-		PacketDiscriminators disc = PacketDiscriminators.values()[payload[0]];
+		int packetId = payload[0] & 0xFF;
+		if (packetId >= PacketDiscriminators.values().length) {
+			// Invalid packet ID
+			return;
+		}
+
+		PacketDiscriminators disc = PacketDiscriminators.values()[packetId];
+
 		if(vp == null && disc != PacketDiscriminators.VERSION) {
 			//how?
 					return;
@@ -106,14 +116,10 @@ public class VivecraftNetworkListener implements PluginMessageListener {
 				}
 				else{
 					vp.setVR(true);
-					PoseOverrider.injectPlayer(sender);
 				}
 
 				if(vse.getConfig().getBoolean("SendPlayerData.enabled") == true)
 					sender.sendPluginMessage(vse, VSE.CHANNEL, new byte[]{(byte) PacketDiscriminators.REQUESTDATA.ordinal()});
-
-				if(vse.getConfig().getBoolean("crawling.enabled") == true)
-					sender.sendPluginMessage(vse, VSE.CHANNEL, new byte[]{(byte) PacketDiscriminators.CRAWL.ordinal()});
 
 				if(vse.getConfig().getBoolean("general.vive-only") == false)
 					sender.sendPluginMessage(vse, VSE.CHANNEL, new byte[]{(byte) PacketDiscriminators.VR_SWITCHING.ordinal(), 1});
@@ -188,6 +194,11 @@ public class VivecraftNetworkListener implements PluginMessageListener {
 				if (vse.getConfig().getBoolean("teleport.enabled"))
 					sender.sendPluginMessage(vse, VSE.CHANNEL, new byte[]{(byte) PacketDiscriminators.TELEPORT.ordinal()});
 
+				boolean crawlingEnabled = vse.getConfig().getBoolean("crawling.enabled");
+				if (crawlingEnabled) {
+					sender.sendPluginMessage(vse, VSE.CHANNEL, new byte[]{(byte) PacketDiscriminators.CRAWL.ordinal()});
+				}
+
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -244,33 +255,45 @@ public class VivecraftNetworkListener implements PluginMessageListener {
 				vse.getLogger().warning("Failed to access NMS ServerPlayer for climbing: " + ex.getMessage());
 			}
 			break;
+		case CRAWL:
+			boolean isCrawlingEnabled = vse.getConfig().getBoolean("crawling.enabled", true);
+
+			if (!isCrawlingEnabled) {
+				return; // Do nothing if crawling is disabled on the server
+			}
+
+			ByteArrayInputStream crawlByin = new ByteArrayInputStream(data);
+			DataInputStream crawlDa = new DataInputStream(crawlByin);
+			try {
+				boolean isCrawling = crawlDa.readBoolean();
+				// Use getHandle() to get the NMS player
+				Object nmsPlayer = sender.getClass().getMethod("getHandle").invoke(sender);
+				if (nmsPlayer instanceof ServerPlayer) {
+					ServerPlayer serverPlayer = (ServerPlayer) nmsPlayer;
+					if (isCrawling) {
+						// Set the SWIMMING pose for crawling
+						PoseOverrider.setPlayerPose(sender, Pose.SWIMMING);
+					} else {
+						// Only reset to STANDING if the current pose is SWIMMING
+						if (serverPlayer.getPose() == Pose.SWIMMING) {
+							PoseOverrider.setPlayerPose(sender, Pose.STANDING);
+						}
+					}
+
+					// Notify the client of the pose change
+					serverPlayer.connection.send(new ClientboundPlayerInfoUpdatePacket(
+						ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, serverPlayer));
+				}
+			} catch (IOException | ReflectiveOperationException e) {
+				vse.getLogger().warning("Failed to process crawl packet: " + e.getMessage());
+			}
+			break;
 		case ACTIVEHAND:
 			ByteArrayInputStream a2 = new ByteArrayInputStream(data);
 			DataInputStream b2 = new DataInputStream(a2);
 			try {
 				vp.activeHand = b2.readByte();
 				if (vp.isSeated()) vp.activeHand = 0;
-			} catch (IOException e2) {
-				e2.printStackTrace();
-			}
-			break;
-		case CRAWL:
-			if (!vse.getConfig().getBoolean("crawling.enabled"))
-				break;
-			ByteArrayInputStream a3 = new ByteArrayInputStream(data);
-			DataInputStream b3 = new DataInputStream(a3);
-			try {
-				vp.crawling = b3.readBoolean();
-				if (vp.crawling) {
-					// Use getHandle() reflection to access NMS Player
-					try {
-						Object nmsEntity = sender.getClass().getMethod("getHandle").invoke(sender);
-						net.minecraft.world.entity.player.Player nmsPlayer = (net.minecraft.world.entity.player.Player) nmsEntity;
-						nmsPlayer.setPose(Pose.SWIMMING);
-					} catch (Exception ex) {
-						vse.getLogger().warning("Failed to access NMS Player for crawling: " + ex.getMessage());
-					}
-				}
 			} catch (IOException e2) {
 				e2.printStackTrace();
 			}
@@ -286,7 +309,6 @@ public class VivecraftNetworkListener implements PluginMessageListener {
 					vp.setVR(false);
 				} else {
 					vp.setVR(true);
-					PoseOverrider.injectPlayer(sender);
 				}
 				vse.sendVRActiveUpdate(vp);
 				vse.setPermissionsGroup(sender);
@@ -294,25 +316,32 @@ public class VivecraftNetworkListener implements PluginMessageListener {
 				e.printStackTrace();
 			}
 			break;
-		case NETWORK_VERSION:
-			//don't care yet.
-			break;
 		case VR_PLAYER_STATE:
-			//todo.
+			// Packet 18 - Not yet implemented, but we must acknowledge it to prevent a crash.
 			break;
+		case NETWORK_VERSION:
+			// Client is sending its network version.
+			break;
+		case UBERPACKET:
+			ByteArrayInputStream ubin = new ByteArrayInputStream(data);
+			// ... existing code ...
 		default:
 			break;
 		}
 	}
 
 	public void writeSetting(ByteArrayOutputStream output, String name, Object value) {
-		if (!writeString(output, name)) {
-			vse.getLogger().warning("Setting name too long: " + name);
-			return;
-		}
-		if (!writeString(output, value.toString())) {
-			vse.getLogger().warning("Setting value too long: " + value);
-			writeString(output, "");
+		try{
+			if(value instanceof Boolean)
+				writeSetting(output, name, (Boolean) value);
+			else if(value instanceof Integer)
+				writeSetting(output, name, (Integer) value);
+			else if(value instanceof Double)
+				writeSetting(output, name, (Double) value);
+			else if(value instanceof String)
+				writeSetting(output, name, (String) value);
+		} catch (Exception e) {
+			vse.getLogger().warning("Failed to write setting: " + e.getMessage());
 		}
 	}
 
