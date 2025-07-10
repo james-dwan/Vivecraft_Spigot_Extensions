@@ -11,7 +11,7 @@ This project is a **fork** of the original [Vivecraft Spigot Extensions](https:/
 VSE is a companion plugin for [Vivecraft](http://www.vivecraft.org), the VR mod for Java Minecraft. 
 VSE is for [Spigot](https://www.spigotmc.org/) and [Paper](https://papermc.io/) servers and adds several enhancements for VR players.
 
-**Latest Version:** `1.21.7-1.0.0`  
+**Latest Version:** `1.21.7-1.0.1`  
 **Minecraft Compatibility:** 1.21.7 (Paper/Spigot)
 
 ---
